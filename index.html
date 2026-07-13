@@ -29,14 +29,12 @@
     -webkit-font-smoothing:antialiased;
     background-color:var(--washi);
     background-image:
-      radial-gradient(circle at 15% 8%, rgba(33,58,95,0.05), transparent 40%),
-      radial-gradient(circle at 90% 60%, rgba(168,56,40,0.05), transparent 45%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='68' height='46'%3E%3Cg fill='none' stroke='%23a9822f' stroke-width='1' stroke-opacity='0.18'%3E%3Cpath d='M0 40 Q17 12 34 40 Q51 12 68 40'/%3E%3Cpath d='M-17 40 Q0 12 17 40'/%3E%3Cpath d='M51 40 Q68 12 85 40'/%3E%3C/g%3E%3Cg fill='%23a9822f' fill-opacity='0.16'%3E%3Ccircle cx='17' cy='23' r='3'/%3E%3Ccircle cx='51' cy='23' r='3'/%3E%3C/g%3E%3C/svg%3E"),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='300' viewBox='0 0 340 300'%3E%3Cg fill='none' stroke='%23213a5f' stroke-width='11' stroke-linecap='round' stroke-opacity='0.07'%3E%3Cpath d='M90 280 L104 90'/%3E%3Cpath d='M250 280 L236 90'/%3E%3Cline x1='112' y1='140' x2='228' y2='140'/%3E%3Cline x1='72' y1='84' x2='268' y2='84'/%3E%3Cpath d='M45 68 Q170 30 295 68'/%3E%3C/g%3E%3C/svg%3E");
-    background-repeat: no-repeat, no-repeat, repeat, no-repeat;
-    background-position: 0 0, 0 0, 0 0, bottom -30px right -50px;
-    background-size: auto, auto, 68px 46px, 460px auto;
-    background-attachment: scroll, scroll, scroll, fixed;
+      linear-gradient(rgba(238,228,205,0.86), rgba(238,228,205,0.9)),
+      url("https://commons.wikimedia.org/wiki/Special:FilePath/KyotoFushimiInariLarge.jpg");
+    background-repeat: no-repeat, no-repeat;
+    background-position: center, center 30%;
+    background-size: cover, cover;
+    background-attachment: fixed, fixed;
   }
   h1,h2,h3,.display{font-family:'Shippori Mincho', serif;}
   .mono{font-family:'JetBrains Mono', monospace;}
@@ -308,7 +306,8 @@
   .map-frame iframe{width:100%; height:260px; border:0; display:block;}
 
   footer{
-    text-align:center; padding:30px 20px 50px; color:#8c8368; font-size:12px;
+    text-align:center; padding:30px 20px 50px; color:#6b6350; font-size:12px; line-height:1.7;
+    text-shadow:0 1px 6px rgba(238,228,205,0.9);
   }
   footer a{color:var(--indigo-soft);}
 
@@ -369,7 +368,8 @@
 </main>
 
 <footer>
-  Hecho para el viaje 東京・京都・大阪・広島 · sincronizado entre 2 viajeros · <a href="https://github.com" target="_blank">GitHub Pages</a>
+  Hecho para el viaje 東京・京都・大阪・広島 · sincronizado entre 2 viajeros<br>
+  Foto de fondo: Fushimi Inari-taisha, Kioto — <a href="https://commons.wikimedia.org/wiki/File:KyotoFushimiInariLarge.jpg" target="_blank" rel="noopener">Wikimedia Commons, CC BY-SA 3.0</a>
 </footer>
 
 <!-- Firebase (Realtime Database) — ver README.md para la configuración -->
