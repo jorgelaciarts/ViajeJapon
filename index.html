@@ -24,13 +24,19 @@
   html{scroll-behavior:smooth;}
   body{
     margin:0;
-    background:var(--washi);
-    background-image:
-      radial-gradient(circle at 15% 8%, rgba(33,58,95,0.05), transparent 40%),
-      radial-gradient(circle at 90% 60%, rgba(168,56,40,0.05), transparent 45%);
     color:var(--ink);
     font-family:'Zen Kaku Gothic New', sans-serif;
     -webkit-font-smoothing:antialiased;
+    background-color:var(--washi);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(33,58,95,0.05), transparent 40%),
+      radial-gradient(circle at 90% 60%, rgba(168,56,40,0.05), transparent 45%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='68' height='46'%3E%3Cg fill='none' stroke='%23a9822f' stroke-width='1' stroke-opacity='0.18'%3E%3Cpath d='M0 40 Q17 12 34 40 Q51 12 68 40'/%3E%3Cpath d='M-17 40 Q0 12 17 40'/%3E%3Cpath d='M51 40 Q68 12 85 40'/%3E%3C/g%3E%3Cg fill='%23a9822f' fill-opacity='0.16'%3E%3Ccircle cx='17' cy='23' r='3'/%3E%3Ccircle cx='51' cy='23' r='3'/%3E%3C/g%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='300' viewBox='0 0 340 300'%3E%3Cg fill='none' stroke='%23213a5f' stroke-width='11' stroke-linecap='round' stroke-opacity='0.07'%3E%3Cpath d='M90 280 L104 90'/%3E%3Cpath d='M250 280 L236 90'/%3E%3Cline x1='112' y1='140' x2='228' y2='140'/%3E%3Cline x1='72' y1='84' x2='268' y2='84'/%3E%3Cpath d='M45 68 Q170 30 295 68'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+    background-position: 0 0, 0 0, 0 0, bottom -30px right -50px;
+    background-size: auto, auto, 68px 46px, 460px auto;
+    background-attachment: scroll, scroll, scroll, fixed;
   }
   h1,h2,h3,.display{font-family:'Shippori Mincho', serif;}
   .mono{font-family:'JetBrains Mono', monospace;}
@@ -514,7 +520,7 @@ function setSync(mode, text){
 }
 
 function performSave(){
-  state.meta = { lastEditedBy: userNameInput.value.trim() || "anónimo", lastEditedAt: Date.now() };
+  state.meta = { ...(state.meta||{}), lastEditedBy: userNameInput.value.trim() || "anónimo", lastEditedAt: Date.now() };
   if(fbReady){
     return db.ref(TRIP_PATH).set(state).then(()=>{
       setSync("", syncedLabel());
@@ -559,16 +565,39 @@ function syncedLabel(){
   return `Sincronizado · último cambio de ${m.lastEditedBy} ${when}`;
 }
 
+/* =========================================================================
+   MIGRACIÓN: si el itinerario ya estaba guardado (Firebase o navegador) de
+   una versión anterior a los vuelos bloqueados, corrige SOLO esos 3 días
+   con la info real de los tickets, sin tocar el resto de días ya editados.
+   Se ejecuta una sola vez por dispositivo/base de datos gracias al número
+   de versión guardado en state.meta.scheduleVersion.
+   ========================================================================= */
+const CURRENT_SCHEDULE_VERSION = 2;
+function migrateSchedule(){
+  const current = (state.meta && state.meta.scheduleVersion) || 1;
+  if(current >= CURRENT_SCHEDULE_VERSION) return false;
+  const fresh = defaultDays();
+  state.days = state.days || {};
+  ["2026-09-04","2026-09-20"].forEach(date=>{ state.days[date] = fresh[date]; });
+  if(!state.days["2026-09-21"]){ state.days["2026-09-21"] = fresh["2026-09-21"]; }
+  state.meta = state.meta || {};
+  state.meta.scheduleVersion = CURRENT_SCHEDULE_VERSION;
+  return true;
+}
+
 if(fbReady){
   db.ref(TRIP_PATH).on("value", snap=>{
     const val = snap.val();
     if(val){
       state = val;
       state.days = state.days || defaultDays();
+      const migrated = migrateSchedule();
       renderAll();
       setSync("", syncedLabel());
+      if(migrated) scheduleSave();
     }else{
       // primera vez: sembrar datos por defecto en la nube
+      migrateSchedule();
       scheduleSave();
     }
   }, err=>{
@@ -578,7 +607,9 @@ if(fbReady){
 }else{
   const local = localStorage.getItem("viaje_japon_local");
   if(local){ try{ state = JSON.parse(local); }catch(e){} }
+  const migrated = migrateSchedule();
   setSync("off","Modo local (configura Firebase para sincronizar entre los 2)");
+  if(migrated) scheduleSave();
 }
 
 /* =========================================================================
