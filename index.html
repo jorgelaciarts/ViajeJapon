@@ -320,11 +320,6 @@
       <span class="mono" style="font-size:12px; color:#7a7362;">viajero:</span>
       <input type="text" id="userName" placeholder="tu nombre" maxlength="16">
     </div>
-    <div style="display:flex; gap:8px;">
-      <button class="btn ghost small" id="exportBtn">Exportar JSON</button>
-      <button class="btn ghost small" id="importBtn">Importar JSON</button>
-      <input type="file" id="importFile" accept="application/json" style="display:none;">
-    </div>
   </div>
 </div>
 
@@ -534,7 +529,6 @@ if(fbReady){
   const local = localStorage.getItem("viaje_japon_local");
   if(local){ try{ state = JSON.parse(local); }catch(e){} }
   setSync("off","Modo local (configura Firebase para sincronizar entre los 2)");
-  renderAll();
 }
 
 /* =========================================================================
@@ -734,38 +728,6 @@ function escapeAttr(s){
 document.getElementById("tripNotes").addEventListener("input", e=>{
   state.tripNotes = e.target.value;
   scheduleSave();
-});
-
-/* =========================================================================
-   6) EXPORTAR / IMPORTAR JSON (respaldo manual, útil sin Firebase también)
-   ========================================================================= */
-document.getElementById("exportBtn").addEventListener("click", ()=>{
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "itinerario-japon-2026.json";
-  a.click();
-  URL.revokeObjectURL(url);
-});
-document.getElementById("importBtn").addEventListener("click", ()=>{
-  document.getElementById("importFile").click();
-});
-document.getElementById("importFile").addEventListener("change", e=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = evt=>{
-    try{
-      const parsed = JSON.parse(evt.target.result);
-      state = parsed;
-      state.days = state.days || defaultDays();
-      renderAll();
-      scheduleSave();
-    }catch(err){
-      alert("El archivo no es un JSON válido de este itinerario.");
-    }
-  };
-  reader.readAsText(file);
 });
 
 /* Render inicial si aún no llegó nada de Firebase (evita pantalla vacía) */
