@@ -553,9 +553,9 @@ function defaultDays(){
     ["2026-09-16","osaka","Osaka — Shinsekai y mercados","", false, []],
     ["2026-09-17","transito","Osaka → Hiroshima","Shinkansen a Hiroshima.", false, []],
     ["2026-09-18","hiroshima","Hiroshima — Parque de la Paz y Miyajima","", false, []],
-    ["2026-09-19","osaka","Regreso a Osaka / día libre y compras","", false, []],
-    ["2026-09-20","vuelo","✈️ Osaka → Narita → Santiago",
-      "Traslado desde Osaka a Tokio (Narita) durante el día. LATAM Airlines (operado por Japan Airlines y LATAM Airlines Perú) · NRT → SCL, 1 escala en Melbourne (MEL) · 28 h 55 min de viaje. Salida domingo 20 de septiembre, 18:40 desde Narita.",
+    ["2026-09-19","transito","Hiroshima → Tokio","Shinkansen de regreso a Tokio. Aprovechar para últimas compras o dejar todo listo antes del vuelo del día siguiente.", false, []],
+    ["2026-09-20","vuelo","✈️ Vuelo Tokio → Santiago",
+      "LATAM Airlines (operado por Japan Airlines y LATAM Airlines Perú) · NRT → SCL, 1 escala en Melbourne (MEL) · 28 h 55 min de viaje. Salida domingo 20 de septiembre, 18:40 desde Tokio (Narita).",
       true, [{time:"18:40", name:"Despegue — Tokio (Narita, NRT)", note:"Escala en Melbourne (MEL) · rumbo a Santiago (SCL)", q:"Narita International Airport, Tokyo"}]],
     ["2026-09-21","vuelo","✈️ Llegada a Santiago",
       "Aterrizaje 11:35 (hora Chile) en Santiago (SCL), lunes 21 de septiembre. Fin del viaje.",
@@ -634,18 +634,18 @@ function syncedLabel(){
 
 /* =========================================================================
    MIGRACIÓN: si el itinerario ya estaba guardado (Firebase o navegador) de
-   una versión anterior a los vuelos bloqueados, corrige SOLO esos 3 días
-   con la info real de los tickets, sin tocar el resto de días ya editados.
+   una versión anterior, corrige SOLO los días de vuelo/traslado final con
+   la info real más reciente, sin tocar el resto de días ya editados.
    Se ejecuta una sola vez por dispositivo/base de datos gracias al número
    de versión guardado en state.meta.scheduleVersion.
    ========================================================================= */
-const CURRENT_SCHEDULE_VERSION = 3;
+const CURRENT_SCHEDULE_VERSION = 4;
 function migrateSchedule(){
   const current = (state.meta && state.meta.scheduleVersion) || 1;
   if(current >= CURRENT_SCHEDULE_VERSION) return false;
   const fresh = defaultDays();
   state.days = state.days || {};
-  ["2026-09-04","2026-09-20","2026-09-21"].forEach(date=>{ state.days[date] = fresh[date]; });
+  ["2026-09-04","2026-09-19","2026-09-20","2026-09-21"].forEach(date=>{ state.days[date] = fresh[date]; });
   state.meta = state.meta || {};
   state.meta.scheduleVersion = CURRENT_SCHEDULE_VERSION;
   return true;
