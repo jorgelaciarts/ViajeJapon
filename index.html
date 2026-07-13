@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>東京・京都・大阪・広島 — Itinerario Japón 2026</title>
+<title>Sueño Coti - Tote — 東京・京都・大阪・広島</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -302,7 +302,7 @@
   <div class="hero-stamp">日本</div>
   <div class="hero-inner">
     <div class="eyebrow">04 — 20 Septiembre 2026</div>
-    <h1 class="title">Itinerario de Japón</h1>
+    <h1 class="title">Sueño Coti - Tote</h1>
     <p class="subtitle">Tokio → Kioto → Osaka → Hiroshima. Un plan vivo: edítalo, mueve actividades y agrega lugares a medida que se acerca el viaje.</p>
   </div>
   <div class="route">
@@ -339,6 +339,9 @@
   </div>
   <div class="day-card" style="margin-bottom:40px;">
     <textarea class="day-notes" id="tripNotes" placeholder="Vuelos, alojamiento, JR Pass, presupuesto, documentos, cosas por comprar…" style="min-height:110px;"></textarea>
+    <div class="day-actions">
+      <button class="btn hanko small" id="saveTripNotes">Guardar cambio</button>
+    </div>
   </div>
 </main>
 
@@ -482,23 +485,42 @@ function setSync(mode, text){
   label.textContent = text;
 }
 
+function performSave(){
+  state.meta = { lastEditedBy: userNameInput.value.trim() || "anónimo", lastEditedAt: Date.now() };
+  if(fbReady){
+    return db.ref(TRIP_PATH).set(state).then(()=>{
+      setSync("", syncedLabel());
+    }).catch(err=>{
+      console.error(err);
+      setSync("off","Error al guardar (revisa reglas de Firebase)");
+    });
+  }else{
+    localStorage.setItem("viaje_japon_local", JSON.stringify(state));
+    setSync("off","Guardado solo en este navegador (sin nube configurada)");
+    return Promise.resolve();
+  }
+}
+
 function scheduleSave(){
   setSync("saving","Guardando…");
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>{
-    state.meta = { lastEditedBy: userNameInput.value.trim() || "anónimo", lastEditedAt: Date.now() };
-    if(fbReady){
-      db.ref(TRIP_PATH).set(state).then(()=>{
-        setSync("", syncedLabel());
-      }).catch(err=>{
-        console.error(err);
-        setSync("off","Error al guardar (revisa reglas de Firebase)");
-      });
-    }else{
-      localStorage.setItem("viaje_japon_local", JSON.stringify(state));
-      setSync("off","Guardado solo en este navegador (sin nube configurada)");
+  saveTimer = setTimeout(performSave, 500);
+}
+
+/* Guardado inmediato al presionar un botón "Guardar cambio": salta la espera
+   y muestra una confirmación breve en el propio botón. */
+function saveNow(btn){
+  clearTimeout(saveTimer);
+  setSync("saving","Guardando…");
+  const isIcon = btn && btn.classList.contains("icon-btn");
+  const original = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = isIcon ? "…" : "Guardando…"; }
+  performSave().then(()=>{
+    if(btn){
+      btn.textContent = isIcon ? "✓" : "✓ Guardado";
+      setTimeout(()=>{ btn.textContent = original; btn.disabled = false; }, 1200);
     }
-  }, 500);
+  });
 }
 
 function syncedLabel(){
@@ -596,6 +618,7 @@ function dayCardEl(date){
     <textarea class="day-notes" placeholder="Notas: horarios, reservas, transporte…">${day.notes||''}</textarea>
     <div class="activities"></div>
     <div class="day-actions">
+      <button class="btn hanko small saveDay">Guardar cambio</button>
       <button class="btn ghost small addAct">+ actividad</button>
       <button class="btn ghost small toggleSugg">Lugares sugeridos</button>
       <button class="btn ghost small toggleMap">Ver mapa</button>
@@ -618,6 +641,7 @@ function dayCardEl(date){
   titleInput.addEventListener("input", ()=>{ day.title = titleInput.value; scheduleSave(); });
   const notesInput = card.querySelector(".day-notes");
   notesInput.addEventListener("input", ()=>{ day.notes = notesInput.value; scheduleSave(); });
+  card.querySelector(".saveDay").addEventListener("click", e=>{ saveNow(e.currentTarget); });
 
   // activities
   const actWrap = card.querySelector(".activities");
@@ -703,6 +727,7 @@ function activityEl(day, idx, actWrap, rerender){
       <input class="act-note" value="${escapeAttr(act.note||'')}" placeholder="nota (opcional)">
     </div>
     <div class="act-actions">
+      <button class="icon-btn saveAct" title="Guardar cambio ahora">💾</button>
       <button class="icon-btn mapAct" title="Ver en el mapa">⌖</button>
       <button class="icon-btn delAct" title="Eliminar">✕</button>
     </div>
@@ -710,6 +735,7 @@ function activityEl(day, idx, actWrap, rerender){
   row.querySelector(".time").addEventListener("input", e=>{ act.time=e.target.value; scheduleSave(); });
   row.querySelector(".act-name").addEventListener("input", e=>{ act.name=e.target.value; if(!act.q) act.q=e.target.value; scheduleSave(); });
   row.querySelector(".act-note").addEventListener("input", e=>{ act.note=e.target.value; scheduleSave(); });
+  row.querySelector(".saveAct").addEventListener("click", e=>{ saveNow(e.currentTarget); });
   row.querySelector(".delAct").addEventListener("click", ()=>{
     day.activities.splice(idx,1);
     scheduleSave();
@@ -730,6 +756,7 @@ document.getElementById("tripNotes").addEventListener("input", e=>{
   state.tripNotes = e.target.value;
   scheduleSave();
 });
+document.getElementById("saveTripNotes").addEventListener("click", e=>{ saveNow(e.currentTarget); });
 
 /* Render inicial si aún no llegó nada de Firebase (evita pantalla vacía) */
 renderAll();
