@@ -468,10 +468,10 @@ const SUGGESTIONS = {
 function defaultDays(){
   const plan = [
     ["2026-09-04","vuelo","✈️ Vuelo Santiago → Tokio",
-      "Vuelo SCL → NRT · viernes 4 de septiembre, 01:05 desde Santiago. Llegada sábado 5 de septiembre, 19:00 a Tokio (Narita). Cabina Economy · Tarifa Standard · 1 adulto.",
-      true, [{time:"01:05", name:"Despegue — Santiago (SCL)", note:"Rumbo a Tokio (Narita, NRT)", q:"Aeropuerto Internacional Arturo Merino Benítez, Santiago"}]],
-    ["2026-09-05","tokio","Llegada a Tokio (Narita)",
-      "Aterrizaje 19:00 en Narita (NRT), sábado 5 de septiembre. Migración, cambio de moneda y traslado al alojamiento. Día liviano.",
+      "LATAM Airlines (parcialmente operado por Qantas) · SCL → HND, 1 escala en Sídney (SYD) · 29 h 35 min de viaje. Salida viernes 4 de septiembre, 01:35 desde Santiago. Llegada sábado 5 de septiembre, 20:10 a Tokio (Haneda).",
+      true, [{time:"01:35", name:"Despegue — Santiago (SCL)", note:"Escala en Sídney (SYD) · rumbo a Tokio (Haneda, HND)", q:"Aeropuerto Internacional Arturo Merino Benítez, Santiago"}]],
+    ["2026-09-05","tokio","Llegada a Tokio (Haneda)",
+      "Aterrizaje 20:10 en Haneda (HND), sábado 5 de septiembre. Migración, cambio de moneda y traslado al alojamiento. Día liviano.",
       false, []],
     ["2026-09-06","tokio","Tokio — Asakusa y Akihabara","", false, []],
     ["2026-09-07","tokio","Tokio — Shibuya y Harajuku","", false, []],
@@ -487,12 +487,12 @@ function defaultDays(){
     ["2026-09-17","transito","Osaka → Hiroshima","Shinkansen a Hiroshima.", false, []],
     ["2026-09-18","hiroshima","Hiroshima — Parque de la Paz y Miyajima","", false, []],
     ["2026-09-19","osaka","Regreso a Osaka / día libre y compras","", false, []],
-    ["2026-09-20","vuelo","✈️ Osaka → Haneda → Santiago",
-      "Traslado desde Osaka a Tokio (Haneda) durante el día. Vuelo HND → SCL · domingo 20 de septiembre, salida 22:00. Cabina Economy · Tarifa Standard · 1 adulto.",
-      true, [{time:"22:00", name:"Despegue — Tokio (Haneda, HND)", note:"Rumbo a Santiago (SCL)", q:"Haneda Airport, Tokyo"}]],
+    ["2026-09-20","vuelo","✈️ Osaka → Narita → Santiago",
+      "Traslado desde Osaka a Tokio (Narita) durante el día. LATAM Airlines (operado por Japan Airlines y LATAM Airlines Perú) · NRT → SCL, 1 escala en Melbourne (MEL) · 28 h 55 min de viaje. Salida domingo 20 de septiembre, 18:40 desde Narita.",
+      true, [{time:"18:40", name:"Despegue — Tokio (Narita, NRT)", note:"Escala en Melbourne (MEL) · rumbo a Santiago (SCL)", q:"Narita International Airport, Tokyo"}]],
     ["2026-09-21","vuelo","✈️ Llegada a Santiago",
-      "Aterrizaje 11:30 (hora Chile) en Santiago (SCL), lunes 21 de septiembre. Fin del viaje.",
-      true, [{time:"11:30", name:"Llegada — Santiago (SCL)", note:"Fin del viaje", q:"Aeropuerto Internacional Arturo Merino Benítez, Santiago"}]]
+      "Aterrizaje 11:35 (hora Chile) en Santiago (SCL), lunes 21 de septiembre. Fin del viaje.",
+      true, [{time:"11:35", name:"Llegada — Santiago (SCL)", note:"Fin del viaje", q:"Aeropuerto Internacional Arturo Merino Benítez, Santiago"}]]
   ];
   const days = {};
   plan.forEach(([date,city,title,notes,locked,activities])=>{
@@ -572,14 +572,13 @@ function syncedLabel(){
    Se ejecuta una sola vez por dispositivo/base de datos gracias al número
    de versión guardado en state.meta.scheduleVersion.
    ========================================================================= */
-const CURRENT_SCHEDULE_VERSION = 2;
+const CURRENT_SCHEDULE_VERSION = 3;
 function migrateSchedule(){
   const current = (state.meta && state.meta.scheduleVersion) || 1;
   if(current >= CURRENT_SCHEDULE_VERSION) return false;
   const fresh = defaultDays();
   state.days = state.days || {};
-  ["2026-09-04","2026-09-20"].forEach(date=>{ state.days[date] = fresh[date]; });
-  if(!state.days["2026-09-21"]){ state.days["2026-09-21"] = fresh["2026-09-21"]; }
+  ["2026-09-04","2026-09-20","2026-09-21"].forEach(date=>{ state.days[date] = fresh[date]; });
   state.meta = state.meta || {};
   state.meta.scheduleVersion = CURRENT_SCHEDULE_VERSION;
   return true;
