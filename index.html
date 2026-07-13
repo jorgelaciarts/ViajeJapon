@@ -188,6 +188,23 @@
   .day-card.city-kioto::before{border-color:#7a6a2a;}
   .day-card.city-osaka::before{border-color:#2a6b5c;}
   .day-card.city-hiroshima::before{border-color:#5a3d7a;}
+  .day-card.city-vuelo::before{border-color:#6b4a2f;}
+
+  .day-card.locked{
+    background:repeating-linear-gradient(135deg, var(--card) 0 18px, #f2e9d6 18px 20px);
+    border-color:#c9b98c;
+  }
+  .lock-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    color:#6b4a2f; background:#efe2c8; border:1px solid #c9b98c;
+    padding:3px 10px; border-radius:20px; margin:10px 0 2px;
+  }
+  .unlock-btn{
+    font-family:'Zen Kaku Gothic New', sans-serif; font-size:11px;
+    color:var(--indigo-soft); background:none; border:none;
+    text-decoration:underline; text-underline-offset:2px; cursor:pointer; padding:0;
+  }
 
   .day-top{display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;}
   .day-date{
@@ -301,7 +318,7 @@
 <header class="hero">
   <div class="hero-stamp">日本</div>
   <div class="hero-inner">
-    <div class="eyebrow">04 — 20 Septiembre 2026</div>
+    <div class="eyebrow">04 — 21 Septiembre 2026</div>
     <h1 class="title">Sueño Coti - Tote</h1>
     <p class="subtitle">Tokio → Kioto → Osaka → Hiroshima. Un plan vivo: edítalo, mueve actividades y agrega lugares a medida que se acerca el viaje.</p>
   </div>
@@ -389,7 +406,8 @@ const CITIES = {
   kioto:     { label: "Kioto",      color:"#7a6a2a" },
   osaka:     { label: "Osaka",      color:"#2a6b5c" },
   hiroshima: { label: "Hiroshima",  color:"#5a3d7a" },
-  transito:  { label: "Tránsito",   color:"#555" }
+  transito:  { label: "Tránsito",   color:"#555" },
+  vuelo:     { label: "Vuelo",      color:"#6b4a2f" }
 };
 
 const SUGGESTIONS = {
@@ -438,31 +456,41 @@ const SUGGESTIONS = {
 };
 
 /* =========================================================================
-   3) ITINERARIO POR DEFECTO (4–20 sept 2026) — 100% editable después
+   3) ITINERARIO POR DEFECTO (4–21 sept 2026) — 100% editable después,
+   salvo los días de vuelo (bloqueados con la info real de los tickets).
    ========================================================================= */
 function defaultDays(){
   const plan = [
-    ["2026-09-04","tokio","Llegada a Tokio","Vuelo de llegada, check-in y primera caminata suave por el barrio."],
-    ["2026-09-05","tokio","Tokio — Asakusa y Akihabara",""],
-    ["2026-09-06","tokio","Tokio — Shibuya y Harajuku",""],
-    ["2026-09-07","tokio","Tokio — Shinjuku y miradores",""],
-    ["2026-09-08","tokio","Tokio — día libre / museos",""],
-    ["2026-09-09","transito","Tokio → Kioto","Shinkansen a Kioto. Guardar equipaje grande y viajar liviano si hay excursión."],
-    ["2026-09-10","kioto","Kioto — Fushimi Inari y Gion",""],
-    ["2026-09-11","kioto","Kioto — Arashiyama",""],
-    ["2026-09-12","kioto","Kioto — Kinkaku-ji y templos del norte",""],
-    ["2026-09-13","kioto","Excursión a Nara",""],
-    ["2026-09-14","transito","Kioto → Osaka","Trayecto corto en tren."],
-    ["2026-09-15","osaka","Osaka — Dotonbori y Castillo",""],
-    ["2026-09-16","osaka","Osaka — Shinsekai y mercados",""],
-    ["2026-09-17","transito","Osaka → Hiroshima","Shinkansen a Hiroshima."],
-    ["2026-09-18","hiroshima","Hiroshima — Parque de la Paz y Miyajima",""],
-    ["2026-09-19","osaka","Regreso a Osaka / día libre y compras",""],
-    ["2026-09-20","transito","Vuelo de regreso","Confirmar horario de traslado al aeropuerto con antelación."]
+    ["2026-09-04","vuelo","✈️ Vuelo Santiago → Tokio",
+      "Vuelo SCL → NRT · viernes 4 de septiembre, 01:05 desde Santiago. Llegada sábado 5 de septiembre, 19:00 a Tokio (Narita). Cabina Economy · Tarifa Standard · 1 adulto.",
+      true, [{time:"01:05", name:"Despegue — Santiago (SCL)", note:"Rumbo a Tokio (Narita, NRT)", q:"Aeropuerto Internacional Arturo Merino Benítez, Santiago"}]],
+    ["2026-09-05","tokio","Llegada a Tokio (Narita)",
+      "Aterrizaje 19:00 en Narita (NRT), sábado 5 de septiembre. Migración, cambio de moneda y traslado al alojamiento. Día liviano.",
+      false, []],
+    ["2026-09-06","tokio","Tokio — Asakusa y Akihabara","", false, []],
+    ["2026-09-07","tokio","Tokio — Shibuya y Harajuku","", false, []],
+    ["2026-09-08","tokio","Tokio — Shinjuku y miradores","", false, []],
+    ["2026-09-09","transito","Tokio → Kioto","Shinkansen a Kioto. Guardar equipaje grande y viajar liviano si hay excursión.", false, []],
+    ["2026-09-10","kioto","Kioto — Fushimi Inari y Gion","", false, []],
+    ["2026-09-11","kioto","Kioto — Arashiyama","", false, []],
+    ["2026-09-12","kioto","Kioto — Kinkaku-ji y templos del norte","", false, []],
+    ["2026-09-13","kioto","Excursión a Nara","", false, []],
+    ["2026-09-14","transito","Kioto → Osaka","Trayecto corto en tren.", false, []],
+    ["2026-09-15","osaka","Osaka — Dotonbori y Castillo","", false, []],
+    ["2026-09-16","osaka","Osaka — Shinsekai y mercados","", false, []],
+    ["2026-09-17","transito","Osaka → Hiroshima","Shinkansen a Hiroshima.", false, []],
+    ["2026-09-18","hiroshima","Hiroshima — Parque de la Paz y Miyajima","", false, []],
+    ["2026-09-19","osaka","Regreso a Osaka / día libre y compras","", false, []],
+    ["2026-09-20","vuelo","✈️ Osaka → Haneda → Santiago",
+      "Traslado desde Osaka a Tokio (Haneda) durante el día. Vuelo HND → SCL · domingo 20 de septiembre, salida 22:00. Cabina Economy · Tarifa Standard · 1 adulto.",
+      true, [{time:"22:00", name:"Despegue — Tokio (Haneda, HND)", note:"Rumbo a Santiago (SCL)", q:"Haneda Airport, Tokyo"}]],
+    ["2026-09-21","vuelo","✈️ Llegada a Santiago",
+      "Aterrizaje 11:30 (hora Chile) en Santiago (SCL), lunes 21 de septiembre. Fin del viaje.",
+      true, [{time:"11:30", name:"Llegada — Santiago (SCL)", note:"Fin del viaje", q:"Aeropuerto Internacional Arturo Merino Benítez, Santiago"}]]
   ];
   const days = {};
-  plan.forEach(([date,city,title,notes])=>{
-    days[date] = { city, title, notes, activities:[] };
+  plan.forEach(([date,city,title,notes,locked,activities])=>{
+    days[date] = { city, title, notes, activities: activities||[], locked: !!locked };
   });
   return days;
 }
@@ -598,13 +626,31 @@ function dayCardEl(date){
   const dt = new Date(date+"T00:00:00");
   const dow = DOW[dt.getDay()];
   const [,m,d] = date.split("-");
+  const locked = !!day.locked;
 
   const card = document.createElement("div");
-  card.className = `day-card city-${day.city==='tokio'?'tokio':day.city==='kioto'?'kioto':day.city==='osaka'?'osaka':day.city==='hiroshima'?'hiroshima':''}`;
+  card.className = `day-card city-${day.city}${locked ? ' locked' : ''}`;
 
   const citySelect = Object.keys(CITIES).map(c=>
     `<option value="${c}" ${c===day.city?'selected':''}>${CITIES[c].label}</option>`
   ).join("");
+
+  const topRight = locked
+    ? `<span class="city-tag">${CITIES[day.city]?.label || day.city}</span>`
+    : `<select class="city-select">${citySelect}</select>`;
+
+  const lockRow = locked
+    ? `<div class="lock-badge">🔒 Vuelo confirmado <button class="unlock-btn">editar</button></div>`
+    : "";
+
+  const actionsRow = locked
+    ? `<div class="day-actions"><button class="btn ghost small toggleMap">Ver mapa</button></div>`
+    : `<div class="day-actions">
+        <button class="btn hanko small saveDay">Guardar cambio</button>
+        <button class="btn ghost small addAct">+ actividad</button>
+        <button class="btn ghost small toggleSugg">Lugares sugeridos</button>
+        <button class="btn ghost small toggleMap">Ver mapa</button>
+      </div>`;
 
   card.innerHTML = `
     <div class="day-top">
@@ -612,53 +658,66 @@ function dayCardEl(date){
         <span class="d mono">${d}.${m}</span>
         <span class="dow">${dow}</span>
       </div>
-      <select class="city-select">${citySelect}</select>
+      ${topRight}
     </div>
-    <input class="day-title" value="${escapeAttr(day.title||'')}" placeholder="Título del día…">
-    <textarea class="day-notes" placeholder="Notas: horarios, reservas, transporte…">${day.notes||''}</textarea>
+    ${lockRow}
+    <input class="day-title" value="${escapeAttr(day.title||'')}" placeholder="Título del día…" ${locked?'readonly':''}>
+    <textarea class="day-notes" placeholder="Notas: horarios, reservas, transporte…" ${locked?'readonly':''}>${day.notes||''}</textarea>
     <div class="activities"></div>
-    <div class="day-actions">
-      <button class="btn hanko small saveDay">Guardar cambio</button>
-      <button class="btn ghost small addAct">+ actividad</button>
-      <button class="btn ghost small toggleSugg">Lugares sugeridos</button>
-      <button class="btn ghost small toggleMap">Ver mapa</button>
-    </div>
+    ${actionsRow}
     <div class="sugg-panel"><div class="sugg-grid"></div></div>
     <div class="map-frame"><iframe loading="lazy" src=""></iframe></div>
   `;
 
-  // city select
-  card.querySelector(".city-select").addEventListener("change", e=>{
-    day.city = e.target.value;
-    scheduleSave();
-    renderRoute();
-    card.className = `day-card city-${day.city}`;
-    renderSuggestions();
-  });
+  // city select (solo existe si el día no está bloqueado)
+  const citySelectEl = card.querySelector(".city-select");
+  if(citySelectEl){
+    citySelectEl.addEventListener("change", e=>{
+      day.city = e.target.value;
+      scheduleSave();
+      renderRoute();
+      card.className = `day-card city-${day.city}`;
+      renderSuggestions();
+    });
+  }
+
+  // botón para desbloquear un día de vuelo (por si cambia el itinerario)
+  const unlockBtn = card.querySelector(".unlock-btn");
+  if(unlockBtn){
+    unlockBtn.addEventListener("click", ()=>{
+      day.locked = false;
+      scheduleSave();
+      renderTimeline();
+    });
+  }
 
   // title / notes
   const titleInput = card.querySelector(".day-title");
   titleInput.addEventListener("input", ()=>{ day.title = titleInput.value; scheduleSave(); });
   const notesInput = card.querySelector(".day-notes");
   notesInput.addEventListener("input", ()=>{ day.notes = notesInput.value; scheduleSave(); });
-  card.querySelector(".saveDay").addEventListener("click", e=>{ saveNow(e.currentTarget); });
+  const saveDayBtn = card.querySelector(".saveDay");
+  if(saveDayBtn){ saveDayBtn.addEventListener("click", e=>{ saveNow(e.currentTarget); }); }
 
   // activities
   const actWrap = card.querySelector(".activities");
   function renderActivities(){
     actWrap.innerHTML = "";
     (day.activities||[]).forEach((act, idx)=>{
-      actWrap.appendChild(activityEl(day, idx, actWrap, renderActivities));
+      actWrap.appendChild(activityEl(day, idx, actWrap, renderActivities, locked));
     });
   }
   renderActivities();
 
-  card.querySelector(".addAct").addEventListener("click", ()=>{
-    day.activities = day.activities || [];
-    day.activities.push({time:"", name:"", note:"", q:""});
-    scheduleSave();
-    renderActivities();
-  });
+  const addActBtn = card.querySelector(".addAct");
+  if(addActBtn){
+    addActBtn.addEventListener("click", ()=>{
+      day.activities = day.activities || [];
+      day.activities.push({time:"", name:"", note:"", q:""});
+      scheduleSave();
+      renderActivities();
+    });
+  }
 
   // suggestions panel
   const suggPanel = card.querySelector(".sugg-panel");
@@ -689,9 +748,12 @@ function dayCardEl(date){
     });
   }
   renderSuggestions();
-  card.querySelector(".toggleSugg").addEventListener("click", ()=>{
-    suggPanel.classList.toggle("open");
-  });
+  const toggleSuggBtn = card.querySelector(".toggleSugg");
+  if(toggleSuggBtn){
+    toggleSuggBtn.addEventListener("click", ()=>{
+      suggPanel.classList.toggle("open");
+    });
+  }
 
   // map
   const mapFrame = card.querySelector(".map-frame");
@@ -712,35 +774,43 @@ function mapQueryForDay(day){
   if(day.activities && day.activities.length && day.activities[0].q){
     return day.activities[0].q;
   }
-  const cityQ = { tokio:"Tokyo Japan", kioto:"Kyoto Japan", osaka:"Osaka Japan", hiroshima:"Hiroshima Japan", transito:"Japan" };
+  const cityQ = { tokio:"Tokyo Japan", kioto:"Kyoto Japan", osaka:"Osaka Japan", hiroshima:"Hiroshima Japan", transito:"Japan", vuelo:"Japan" };
   return cityQ[day.city] || "Japan";
 }
 
-function activityEl(day, idx, actWrap, rerender){
+function activityEl(day, idx, actWrap, rerender, locked){
   const act = day.activities[idx];
   const row = document.createElement("div");
   row.className = "activity";
+  const ro = locked ? "readonly" : "";
+  const actionButtons = locked
+    ? `<button class="icon-btn mapAct" title="Ver en el mapa">⌖</button>`
+    : `<button class="icon-btn saveAct" title="Guardar cambio ahora">💾</button>
+       <button class="icon-btn mapAct" title="Ver en el mapa">⌖</button>
+       <button class="icon-btn delAct" title="Eliminar">✕</button>`;
   row.innerHTML = `
-    <input class="time mono" value="${escapeAttr(act.time||'')}" placeholder="hh:mm">
+    <input class="time mono" value="${escapeAttr(act.time||'')}" placeholder="hh:mm" ${ro}>
     <div class="act-body">
-      <input class="act-name" value="${escapeAttr(act.name||'')}" placeholder="Lugar / actividad">
-      <input class="act-note" value="${escapeAttr(act.note||'')}" placeholder="nota (opcional)">
+      <input class="act-name" value="${escapeAttr(act.name||'')}" placeholder="Lugar / actividad" ${ro}>
+      <input class="act-note" value="${escapeAttr(act.note||'')}" placeholder="nota (opcional)" ${ro}>
     </div>
     <div class="act-actions">
-      <button class="icon-btn saveAct" title="Guardar cambio ahora">💾</button>
-      <button class="icon-btn mapAct" title="Ver en el mapa">⌖</button>
-      <button class="icon-btn delAct" title="Eliminar">✕</button>
+      ${actionButtons}
     </div>
   `;
   row.querySelector(".time").addEventListener("input", e=>{ act.time=e.target.value; scheduleSave(); });
   row.querySelector(".act-name").addEventListener("input", e=>{ act.name=e.target.value; if(!act.q) act.q=e.target.value; scheduleSave(); });
   row.querySelector(".act-note").addEventListener("input", e=>{ act.note=e.target.value; scheduleSave(); });
-  row.querySelector(".saveAct").addEventListener("click", e=>{ saveNow(e.currentTarget); });
-  row.querySelector(".delAct").addEventListener("click", ()=>{
-    day.activities.splice(idx,1);
-    scheduleSave();
-    rerender();
-  });
+  const saveActBtn = row.querySelector(".saveAct");
+  if(saveActBtn){ saveActBtn.addEventListener("click", e=>{ saveNow(e.currentTarget); }); }
+  const delActBtn = row.querySelector(".delAct");
+  if(delActBtn){
+    delActBtn.addEventListener("click", ()=>{
+      day.activities.splice(idx,1);
+      scheduleSave();
+      rerender();
+    });
+  }
   row.querySelector(".mapAct").addEventListener("click", ()=>{
     const q = encodeURIComponent(act.q || act.name || mapQueryForDay(day));
     window.open(`https://www.google.com/maps?q=${q}`, "_blank");
