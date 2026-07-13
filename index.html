@@ -305,6 +305,66 @@
   .map-frame.open{display:block;}
   .map-frame iframe{width:100%; height:260px; border:0; display:block;}
 
+  /* ---------- DASHBOARD ---------- */
+  .dashboard{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr));
+    gap:12px; margin-bottom:8px;
+  }
+  .dash-card{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:16px 18px;
+  }
+  .dash-label{
+    font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.07em; color:var(--gold); margin-bottom:8px;
+  }
+  .dash-amount{
+    font-family:'Shippori Mincho', serif; font-size:21px; font-weight:700; line-height:1.3;
+  }
+  .dash-sub{font-size:11.5px; color:#7a7362; margin-top:4px;}
+  .dash-empty{font-size:13px; color:#a89f86; font-style:italic;}
+
+  /* ---------- HOSPEDAJE ---------- */
+  .lodging{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    background:#fffdf7; border:1px solid var(--line); border-radius:8px;
+    padding:8px 10px; margin:10px 0;
+  }
+  .lodging-icon{font-size:15px; flex:none;}
+  .lodging input{
+    border:none; background:transparent; font-size:13px; flex:1 1 140px; min-width:120px; padding:3px 2px;
+  }
+  .lodging input:focus{outline:none;}
+  .lodging-open{
+    font-size:12px; color:var(--indigo-soft); text-decoration:underline; text-underline-offset:2px; white-space:nowrap; flex:none;
+  }
+
+  /* ---------- GASTOS ---------- */
+  .exp-panel{
+    margin-top:12px; border-top:1px dashed var(--line); padding-top:12px;
+    display:none;
+  }
+  .exp-panel.open{display:block;}
+  .expenses-list{display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
+  .expense{
+    display:flex; gap:8px; align-items:center;
+    background:#fffdf7; border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+  }
+  .expense input.exp-name{flex:1; min-width:0; border:none; background:transparent; font-size:13px; padding:3px 2px;}
+  .expense input.exp-amount{
+    width:90px; flex:none; border:none; background:transparent; font-size:13px; padding:3px 2px;
+    font-family:'JetBrains Mono', monospace; text-align:right;
+  }
+  .expense select.exp-currency{
+    font-family:'JetBrains Mono', monospace; font-size:11px; flex:none;
+    border:1px solid var(--line); border-radius:6px; background:#fff; padding:4px 4px;
+  }
+  .expense input:focus, .expense select:focus{outline:none;}
+  .exp-total{font-size:13px; font-weight:700; color:var(--indigo-deep);}
+  .exp-badge{
+    font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--hanko); margin-left:3px;
+  }
+
   footer{
     text-align:center; padding:30px 20px 50px; color:#6b6350; font-size:12px; line-height:1.7;
     text-shadow:0 1px 6px rgba(238,228,205,0.9);
@@ -348,6 +408,13 @@
 <main>
   <div class="section-head">
     <span class="num mono">01</span>
+    <h2>Resumen del viaje</h2>
+    <div class="rule"></div>
+  </div>
+  <div class="dashboard" id="dashboard"></div>
+
+  <div class="section-head">
+    <span class="num mono">02</span>
     <h2>Día a día</h2>
     <div class="rule"></div>
   </div>
@@ -355,7 +422,7 @@
   <div class="timeline" id="timeline"></div>
 
   <div class="section-head">
-    <span class="num mono">02</span>
+    <span class="num mono">03</span>
     <h2>Notas generales del viaje</h2>
     <div class="rule"></div>
   </div>
@@ -496,7 +563,7 @@ function defaultDays(){
   ];
   const days = {};
   plan.forEach(([date,city,title,notes,locked,activities])=>{
-    days[date] = { city, title, notes, activities: activities||[], locked: !!locked };
+    days[date] = { city, title, notes, activities: activities||[], locked: !!locked, lodging:{name:"",link:"",confirmation:""}, expenses:[] };
   });
   return days;
 }
@@ -584,12 +651,25 @@ function migrateSchedule(){
   return true;
 }
 
+/* Asegura que todo día tenga los campos nuevos (gastos, hospedaje), incluso
+   si el itinerario fue guardado antes de que existieran. No pisa datos. */
+function normalizeDays(){
+  Object.values(state.days||{}).forEach(d=>{
+    if(!Array.isArray(d.expenses)) d.expenses = [];
+    if(!d.lodging || typeof d.lodging !== "object"){ d.lodging = {name:"",link:"",confirmation:""}; }
+    d.lodging.name = d.lodging.name || "";
+    d.lodging.link = d.lodging.link || "";
+    d.lodging.confirmation = d.lodging.confirmation || "";
+  });
+}
+
 if(fbReady){
   db.ref(TRIP_PATH).on("value", snap=>{
     const val = snap.val();
     if(val){
       state = val;
       state.days = state.days || defaultDays();
+      normalizeDays();
       const migrated = migrateSchedule();
       renderAll();
       setSync("", syncedLabel());
@@ -606,6 +686,7 @@ if(fbReady){
 }else{
   const local = localStorage.getItem("viaje_japon_local");
   if(local){ try{ state = JSON.parse(local); }catch(e){} }
+  normalizeDays();
   const migrated = migrateSchedule();
   setSync("off","Modo local (configura Firebase para sincronizar entre los 2)");
   if(migrated) scheduleSave();
@@ -639,7 +720,53 @@ function firstDateFor(city){
 function renderAll(){
   renderRoute();
   renderTimeline();
+  renderDashboard();
   document.getElementById("tripNotes").value = state.tripNotes || "";
+}
+
+function renderDashboard(){
+  const el = document.getElementById("dashboard");
+  if(!el) return;
+  const days = Object.values(state.days || {});
+  const totals = {};
+  let expenseCount = 0;
+  days.forEach(d=>{
+    (d.expenses||[]).forEach(e=>{
+      const amt = parseFloat(e.amount) || 0;
+      if(!amt) return;
+      const cur = e.currency || "CLP";
+      totals[cur] = (totals[cur]||0) + amt;
+      expenseCount++;
+    });
+  });
+  const stayDays = days.filter(d=>d.city!=="vuelo" && d.city!=="transito");
+  const lodgedDays = stayDays.filter(d=>d.lodging && d.lodging.name && d.lodging.name.trim());
+  const totalsHtml = Object.keys(totals).length
+    ? Object.entries(totals).map(([cur,amt])=>`<div class="dash-amount">${formatCurrency(amt,cur)}</div>`).join("")
+    : `<div class="dash-empty">Sin gastos registrados</div>`;
+
+  el.innerHTML = `
+    <div class="dash-card">
+      <div class="dash-label">Gastos registrados</div>
+      ${totalsHtml}
+      <div class="dash-sub">${expenseCount} ${expenseCount===1?'gasto cargado':'gastos cargados'}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-label">Hospedaje</div>
+      <div class="dash-amount">${lodgedDays.length} / ${stayDays.length}</div>
+      <div class="dash-sub">noches con alojamiento cargado</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-label">Ruta</div>
+      <div class="dash-amount">4 ciudades</div>
+      <div class="dash-sub">Tokio · Kioto · Osaka · Hiroshima</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-label">Duración</div>
+      <div class="dash-amount">${days.length} días</div>
+      <div class="dash-sub">4 — 21 de septiembre 2026</div>
+    </div>
+  `;
 }
 
 function renderTimeline(){
@@ -674,12 +801,16 @@ function dayCardEl(date){
     : "";
 
   const actionsRow = locked
-    ? `<div class="day-actions"><button class="btn ghost small toggleMap">Ver mapa</button></div>`
+    ? `<div class="day-actions">
+        <button class="btn ghost small toggleMap">Ver mapa</button>
+        <button class="btn ghost small toggleExp">Gastos <span class="exp-badge"></span></button>
+      </div>`
     : `<div class="day-actions">
         <button class="btn hanko small saveDay">Guardar cambio</button>
         <button class="btn ghost small addAct">+ actividad</button>
         <button class="btn ghost small toggleSugg">Lugares sugeridos</button>
         <button class="btn ghost small toggleMap">Ver mapa</button>
+        <button class="btn ghost small toggleExp">Gastos <span class="exp-badge"></span></button>
       </div>`;
 
   card.innerHTML = `
@@ -693,10 +824,24 @@ function dayCardEl(date){
     ${lockRow}
     <input class="day-title" value="${escapeAttr(day.title||'')}" placeholder="Título del día…" ${locked?'readonly':''}>
     <textarea class="day-notes" placeholder="Notas: horarios, reservas, transporte…" ${locked?'readonly':''}>${day.notes||''}</textarea>
+    <div class="lodging">
+      <span class="lodging-icon">🏨</span>
+      <input class="lodging-name" placeholder="Hospedaje (nombre)" value="${escapeAttr(day.lodging?.name||'')}">
+      <input class="lodging-link" placeholder="Link de reserva (Booking, Airbnb…)" value="${escapeAttr(day.lodging?.link||'')}">
+      <input class="lodging-conf" placeholder="Nº confirmación" value="${escapeAttr(day.lodging?.confirmation||'')}" style="flex:0 1 110px; min-width:90px;">
+      <a class="lodging-open" href="${escapeAttr(day.lodging?.link||'#')}" target="_blank" rel="noopener" style="display:${day.lodging?.link?'inline':'none'};">Abrir ↗</a>
+    </div>
     <div class="activities"></div>
     ${actionsRow}
     <div class="sugg-panel"><div class="sugg-grid"></div></div>
     <div class="map-frame"><iframe loading="lazy" src=""></iframe></div>
+    <div class="exp-panel">
+      <div class="expenses-list"></div>
+      <div class="day-actions">
+        <button class="btn ghost small addExp">+ gasto</button>
+      </div>
+      <div class="exp-total"></div>
+    </div>
   `;
 
   // city select (solo existe si el día no está bloqueado)
@@ -797,7 +942,89 @@ function dayCardEl(date){
     mapFrame.classList.toggle("open");
   });
 
+  // hospedaje
+  day.lodging = day.lodging || {name:"",link:"",confirmation:""};
+  const lodgingNameEl = card.querySelector(".lodging-name");
+  const lodgingLinkEl = card.querySelector(".lodging-link");
+  const lodgingConfEl = card.querySelector(".lodging-conf");
+  const lodgingOpenEl = card.querySelector(".lodging-open");
+  function syncLodgingOpen(){
+    const link = day.lodging.link.trim();
+    if(link){
+      lodgingOpenEl.style.display = "inline";
+      lodgingOpenEl.href = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+    }else{
+      lodgingOpenEl.style.display = "none";
+    }
+  }
+  lodgingNameEl.addEventListener("input", ()=>{ day.lodging.name = lodgingNameEl.value; scheduleSave(); renderDashboard(); });
+  lodgingLinkEl.addEventListener("input", ()=>{ day.lodging.link = lodgingLinkEl.value; syncLodgingOpen(); scheduleSave(); });
+  lodgingConfEl.addEventListener("input", ()=>{ day.lodging.confirmation = lodgingConfEl.value; scheduleSave(); });
+
+  // gastos
+  day.expenses = day.expenses || [];
+  const expList = card.querySelector(".expenses-list");
+  const expTotalEl = card.querySelector(".exp-total");
+  const expBadgeEl = card.querySelector(".exp-badge");
+  function renderExpenses(){
+    expList.innerHTML = "";
+    day.expenses.forEach((exp, idx)=>{
+      expList.appendChild(expenseEl(day, idx, renderExpenses));
+    });
+    const totals = {};
+    day.expenses.forEach(e=>{
+      const amt = parseFloat(e.amount) || 0;
+      if(!amt) return;
+      const cur = e.currency || "CLP";
+      totals[cur] = (totals[cur]||0) + amt;
+    });
+    const parts = Object.entries(totals).map(([cur,amt])=>formatCurrency(amt,cur));
+    expTotalEl.textContent = parts.length ? `Total del día: ${parts.join(" · ")}` : "";
+    expBadgeEl.textContent = parts.length ? `(${parts.join(" · ")})` : "";
+    renderDashboard();
+  }
+  renderExpenses();
+  card.querySelector(".addExp").addEventListener("click", ()=>{
+    day.expenses.push({name:"", amount:"", currency:"CLP"});
+    scheduleSave();
+    renderExpenses();
+  });
+  const expPanel = card.querySelector(".exp-panel");
+  card.querySelector(".toggleExp").addEventListener("click", ()=>{
+    expPanel.classList.toggle("open");
+  });
+
   return card;
+}
+
+function expenseEl(day, idx, rerender){
+  const exp = day.expenses[idx];
+  const row = document.createElement("div");
+  row.className = "expense";
+  row.innerHTML = `
+    <input class="exp-name" placeholder="Concepto (almuerzo, entrada, souvenir…)" value="${escapeAttr(exp.name||'')}">
+    <input class="exp-amount" type="number" inputmode="decimal" placeholder="0" value="${escapeAttr(exp.amount||'')}">
+    <select class="exp-currency">
+      ${["CLP","JPY","USD"].map(c=>`<option value="${c}" ${exp.currency===c?'selected':''}>${c}</option>`).join("")}
+    </select>
+    <button class="icon-btn delExp" title="Eliminar">✕</button>
+  `;
+  row.querySelector(".exp-name").addEventListener("input", e=>{ exp.name = e.target.value; scheduleSave(); });
+  row.querySelector(".exp-amount").addEventListener("input", e=>{ exp.amount = e.target.value; scheduleSave(); rerender(); });
+  row.querySelector(".exp-currency").addEventListener("change", e=>{ exp.currency = e.target.value; scheduleSave(); rerender(); });
+  row.querySelector(".delExp").addEventListener("click", ()=>{
+    day.expenses.splice(idx,1);
+    scheduleSave();
+    rerender();
+  });
+  return row;
+}
+
+function formatCurrency(amount, currency){
+  const symbols = { CLP:"$", USD:"US$", JPY:"¥" };
+  const sym = symbols[currency] || (currency+" ");
+  const rounded = Math.round(amount);
+  return `${sym}${rounded.toLocaleString("es-CL")} ${currency==="CLP"?"":currency}`.trim();
 }
 
 function mapQueryForDay(day){
