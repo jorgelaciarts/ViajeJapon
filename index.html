@@ -673,7 +673,8 @@ function dayCardEl(date){
   const mapFrame = card.querySelector(".map-frame");
   const iframe = mapFrame.querySelector("iframe");
   card.querySelector(".toggleMap").addEventListener("click", ()=>{
-    if(!iframe.src || iframe.src==="about:blank"){
+    const willOpen = !mapFrame.classList.contains("open");
+    if(willOpen){
       const query = encodeURIComponent(mapQueryForDay(day));
       iframe.src = `https://www.google.com/maps?q=${query}&output=embed`;
     }
